@@ -1,4 +1,4 @@
-name Deploy AWS Dev
+name: Deploy AWS Dev
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ jobs:
     name: Build/Test
     steps:
     - uses: actions/checkout@v2
-    - name: NPM - Installa dependencies
+    - name: NPM - Install dependencies
       if: steps.cached-npm-dependencies.outputs.cache-hit != 'true'
       run: 'npm install'
 
