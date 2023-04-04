@@ -1,4 +1,4 @@
-name: Deploy AWS Dev
+name: Deploy DEV
 
 on:
   pull_request:
@@ -10,11 +10,12 @@ jobs:
     name: Build/Test
     steps:
     - uses: actions/checkout@v2
+
     - name: NPM - Install dependencies
       if: steps.cached-npm-dependencies.outputs.cache-hit != 'true'
       run: 'npm install'
 
-    - name: Run Tests  
+    - name: Run Tests
       run: |
         npm run test
 
@@ -24,12 +25,14 @@ jobs:
     needs: testing-changes
     steps:
     - uses: actions/checkout@v2.0.0
+
     - name: NPM - Load cached venv
       id: cached-npm-dependencies
       uses: actions/cache@v2
       with:
         path: node_modules
         key: npm-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+
     - name: NPM - Install dependencies
       if: steps.cached-npm-dependencies.outputs.cache-hit != 'true'
       run: 'npm install'
@@ -40,8 +43,8 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
         AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
 
-    - name: Comment PR      
-      uses: thollander/actions-comment-pull-request@v2
+    - name: Comment PR
+      uses: thollander/actions-comment-pull-request@v1
       with:
         message: |
           Your SLS App was deployed!
