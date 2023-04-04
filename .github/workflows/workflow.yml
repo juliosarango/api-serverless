@@ -47,4 +47,5 @@ jobs:
           Your SLS App was deployed!
           Awesome :D
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
 
