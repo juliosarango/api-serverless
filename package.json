@@ -1,0 +1,19 @@
+{
+  "name": "api-crud",
+  "version": "1.0.0",
+  "description": "Basic API serverless template",
+  "main": "api.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Julio Sarango",
+  "license": "ISC",
+  "devDependencies": {
+    "aws-sdk": "^2.1343.0",
+    "serverless": "^3.29.0",
+    "serverless-offline": "^12.0.4"
+  },
+  "dependencies": {
+    "serverless-dynamodb-local": "^0.2.40"
+  }
+}
