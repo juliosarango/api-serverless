@@ -1,8 +1,11 @@
-service: api-crud
+service: project-api
 
 provider:
   name: aws
   runtime: nodejs14.x
+  apiGateway:
+    apiKeys:
+      - project-api-key
   iam:
     role:
       statements: 
@@ -10,11 +13,16 @@ provider:
           Action: "dynamodb:*"
           Resource: arn:aws:dynamodb:us-east-1:536729514546:table/usersTable
 
-	
-plugins:	
-  - serverless-offline   
-  - serverless-dynamodb-local
+        - Effect: Allow
+          Action: "S3:*"
+          Resource: arn:aws:s3:::bucket-api-serverless-js/*
 
+  environment:
+    BUCKET: ${ssm:/BUKET_NAME_SERVERLESS_API_DEV}
+    # accedemos al secret del system manager
+    SECRET_EGG: ${ssm:/SECRET_EGG}
+    EXPIRES_TIME: 300
+	
 package:
   individually: true
   patterns:
@@ -30,7 +38,18 @@ custom:
       inMemory: true
       migrate: true	
 
+  s3:
+    host: localhost	
+    directory: /tmp    
+
 functions:
+  # la funcion authorizer será usada por api gateway para validar la autenticación
+  custom-authorizer:
+    handler: authorizer/handler.authorize
+    package:    
+      patterns:
+        - "authorizer/handler.js"
+
   get-users:
     handler: getUsers/handler.getUsers
     package:    
@@ -38,8 +57,14 @@ functions:
         - "getUsers/handler.js"
     events:
       - http:
+          # con la instrucción private habilitamos para usar apikey
+          private: true
           path: users/{id}
           method: GET     
+          request:
+            parameters:
+              paths:
+                id: true
 
   get-all-users:
     handler: getAllUsers/handler.getAllUsers
@@ -52,14 +77,20 @@ functions:
           method: GET              
 
   create-users:
-    handler: createUsers/handler.createUsers
+    handler: createUsers/handler.createUsers    
     package:    
       patterns:
         - "createUsers/handler.js"
     events:
       - http:
           path: users
-          method: POST     
+          authorizer:
+            name: custom-authorizer
+            resultTtlInSeconds: 15
+          method: POST    
+          request:
+            schemas: 
+              application/json: ${file(schemas/user-schema.json)} 
 
   update-users:
     handler: updateUsers/handler.updateUsers
@@ -70,6 +101,12 @@ functions:
       - http:
           path: users/{id}
           method: PATCH  
+          request:
+            parameters:
+              paths:
+                id: true
+            schemas: 
+              application/json: ${file(schemas/user-schema.json)}     
 
   delete-users:
     handler: deleteUsers/handler.deleteUsers
@@ -80,7 +117,50 @@ functions:
     events:
       - http:
           path: users/{id}
-          method: DELETE               
+          method: DELETE     
+          request:
+            parameters:
+              paths:
+                id: true     
+
+  signed-url:
+    handler: signedUrl/handler.signedS3URL
+    package:    
+      patterns:
+        - "signedUrl/handler.js"    
+    events:
+      - http:
+          path: signedurl
+          method: GET     
+          request:
+            parameters:
+              querystrings:
+                filename: true                
+
+  thumbnail-generator:
+    handler: thumbnail/handler.thumbnailGenerator
+    layers:
+      - { Ref: BaseLambdaLayer }
+    package:    
+      patterns:
+        - "thumbnail/handler.js"            
+    events:
+      - s3:
+          bucket: bucket-api-serverless-js
+          event: s3:ObjectCreated:*
+          existing: true
+          rules: 
+            - prefix: upload/
+
+# automatizar la subida de una layer
+layers:
+  base:
+    name: "dev-thumbnail-layer"
+    compatibleRuntimes:
+      - "nodejs14.x"
+    package:
+      artifact: app/nodejs.zip
+
 
 resources: 
   Resources:	
@@ -96,4 +176,27 @@ resources:
             KeyType: HASH	
         ProvisionedThroughput:	
           ReadCapacityUnits: 1	
-          WriteCapacityUnits: 1          
+          WriteCapacityUnits: 1       
+
+    S3Bucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        AccessControl: PublicRead
+        BucketName: bucket-api-serverless-js
+
+    SampleBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref S3Bucket
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Action:
+                - 's3:GetObject'
+              Effect: Allow
+              Resource: !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref S3Bucket
+                  - /*
+              Principal: '*'
