@@ -3,6 +3,9 @@ service: project-api
 provider:
   name: aws
   runtime: nodejs14.x
+  apiGateway:
+    apiKeys:
+      - project-api-key
   iam:
     role:
       statements: 
@@ -45,6 +48,8 @@ functions:
         - "getUsers/handler.js"
     events:
       - http:
+          # con la instrucción private habilitamos para usar apikey
+          private: true
           path: users/{id}
           method: GET     
           request:
