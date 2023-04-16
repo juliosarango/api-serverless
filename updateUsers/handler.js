@@ -23,9 +23,9 @@ const updateUsers = async(event, context) => {
   const params = {
     TableName: 'usersTable',
     Key: { pk: userId },
-    UpdateExpression: "set #name = :name, #telefono = :telefono",
-    ExpressionAttributeNames : {"#name":"name", "#telefono": "telefono"},
-    ExpressionAttributeValues: { ':name': body.name, ":telefono": body.telefono },
+    UpdateExpression: "set #name = :name, #lastname = :lastname, #age = :age, #email = :email",
+    ExpressionAttributeNames : {"#name":"name", "#lastname": "lastname", "#age": "age", "#email":"email"},
+    ExpressionAttributeValues: { ':name': body.name, ":lastname": body.lastname, ":age": body.age, ":email": body.email },
     ReturnValues: "ALL_NEW"
   }
 
