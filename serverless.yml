@@ -45,7 +45,7 @@ custom:
 functions:
   # la funcion authorizer será usada por api gateway para validar la autenticación
   custom-authorizer:
-    handler: authorizer/handler.autorize
+    handler: authorizer/handler.authorize
     package:    
       patterns:
         - "authorizer/handler.js"
