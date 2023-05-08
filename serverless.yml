@@ -8,13 +8,13 @@ provider:
       statements: 
         - Effect: Allow
           Action: "dynamodb:*"
-          Resource: arn:aws:dynamodb:us-east-1:536729514546:table/usersTable
+          Resource: 
+            - arn:aws:dynamodb:us-east-1:536729514546:table/usersTable
+            - arn:aws:sts::536729514546:table/usersTable
 
-	
-plugins:	
-  - serverless-offline   
-  - serverless-dynamodb-local
-
+plugins:
+  - serverless-apigateway-service-proxy
+  - serverless-lift
 package:
   individually: true
   patterns:
@@ -29,6 +29,41 @@ custom:
       port: 8000	
       inMemory: true
       migrate: true	
+  apiGatewayServiceProxies:	
+    - sqs:
+        path: /likeUser	
+        method: post	
+        queueName: likeuser-queue
+        cors: true	
+        response:	
+          template:	
+            # `success` is used when the integration response is 200
+            success: |-
+              { "message": "accepted" }              
+            # `clientError` is used when the integration response is 400	
+            clientError: |-
+              { "message": "there is an error in your request" }	
+            # `serverError` is used when the integration response is 500	
+            serverError: |-
+              { "message": "there was an error handling your request" }
+
+constructs:
+  sql-likeuser-queue:
+    type: queue
+    # cuantas tareas de la cola se van a ejecutar al mismo tiempo
+    batchSize: 1
+    worker:
+      handler: likeUser/handler.likeUser
+      # cuantas instancias de lambda van a ejeutarse
+      reservedConcurrency: 1
+      package:    
+        patterns:
+          - "likeUser/handler.js"
+    extensions:
+      queue:
+        Properties:
+          QueueName: likeuser-queue
+
 
 functions:
   get-users:
