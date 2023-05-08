@@ -8,7 +8,9 @@ provider:
       statements: 
         - Effect: Allow
           Action: "dynamodb:*"
-          Resource: arn:aws:dynamodb:us-east-1:536729514546:table/usersTable
+          Resource: 
+            - arn:aws:dynamodb:us-east-1:536729514546:table/usersTable
+            - arn:aws:sts::536729514546:table/usersTable
 
 plugins:
   - serverless-apigateway-service-proxy
